@@ -1,0 +1,160 @@
+================================================================================================================================================
+Notes when creating spring project
+
+****DONT EVER EVER FORGET THIS THINGS****
+
+Dont forget "@Entity" annotation in POJO
+Dont forget to use "@CrossOrigin(origins = "http://localhost:4200"), @RestController" in Controller class
+Dont forget "@Autowired" annotation when using JPARepository
+Dont forget in ClientProxy when using //Feign Client "@FeignClient(name="server.brixter.kim.d.duenas", url="localhost:8081")"  *class Interface
+Also In spring boot Application "@SpringBootApplication(exclude = { SecurityAutoConfiguration.class }), @EnableFeignClients("bars.login.client.brixter.kim.d.duenas")"
+Use "@Controller" in controller class in client side
+Add annotation "@EnableJpaRepositories(basePackages = "bars.login.server.brixter.kim.d.duenas" )" where you declare jpa repositories
+
+
+
+
+
+
+
+================================================================================================================================================
+Code that is Helpful
+
+protected static final Logger logger = LoggerFactory.getLogger(class);
+
+
+================================================================================================================================================
+Sample code to get JSON data from a URL:
+@GetMapping("/weatherAirTemp")
+    public String getWeatherAirTemp(){
+        String data = "";
+        System.setProperty("http.agent", "Chrome");
+        try{
+            RestTemplate restTemplate = new RestTemplate(new HttpComponentsClientHttpRequestFactory(HttpClients.createDefault()));
+            HttpHeaders headers = new HttpHeaders();
+            HttpEntity<String> entity = new HttpEntity<String>(headers);
+            String fooResourceUrl
+                    = "https://api.data.gov.sg/v1/environment/air-temperature?date_time=2019-01-19T10:00:00";
+            ResponseEntity<String> response = restTemplate.exchange(fooResourceUrl, HttpMethod.GET, entity, String.class);
+            data = response.getBody();
+            
+            
+        }
+        catch (Exception e){
+            e.printStackTrace();
+        }
+        return data;
+    }
+
+================================================================================================================================================
+    
+    @GetMapping("/weatherAirTempData")
+    public MetadataLast getWeatherAirTempData(){
+            RestTemplate restTemplate = new RestTemplate(new HttpComponentsClientHttpRequestFactory(HttpClients.createDefault()));
+          
+            String fooResourceUrl
+                    = "https://api.data.gov.sg/v1/environment/air-temperature?date_time=2019-01-19T10:00:00";
+            MetadataLast data = restTemplate.getForObject(fooResourceUrl, MetadataLast.class);
+            
+        return data;
+    }
+
+
+================================================================================================================================================
+*Sample code when getting value
+
+    @PostMapping("/login")
+    public String login(@RequestParam(value = "email") String email, @RequestParam(value = "password") String password) throws FileNotFoundException {
+        Account account = service.findByEmail(email);
+        if(encoder.matches(password,account.getPassword())) {
+            return JWT.create()
+                    .withClaim("ID", account.getId())
+                    .withClaim("role", account.getRole())
+                    .withIssuer("auth0")
+                    .withExpiresAt(new Date(System.currentTimeMillis() + (15 * 1000 * 60)))
+                    .sign(HMAC512("eyJ0eXAiOiJKV1Qis2fxz2rgdaLCJhbGciOiJIUzUxMiJ9"));
+        }
+        else
+            throw new FileNotFoundException("Account Does Not Exist ");
+    }
+
+
+================================================================================================================================================
+*Sample code when getting data from JSP and how to use ModelAndView
+
+	@PostMapping("/insertMember")
+	public ModelAndView insertUserPassword(HttpServletRequest request) {
+		
+		ModelAndView model = new ModelAndView();
+		String userName = request.getParameter("userName").trim();
+		String password = request.getParameter("password").trim();
+		String userType = request.getParameter("userType").trim();
+		
+		User user = clientProxy.geteUsername(userName);
+		
+		if(user == null) {
+			clientProxy.saveUserByNameAndPass(userName, password, userType);
+			List<User> listOfUser = clientProxy.getAll();
+			model.addObject("userList", listOfUser);
+			model.addObject("userCreate", "User successfully created!");
+			model.setViewName("adminSuccess");
+			return model;
+		}else {
+			model.addObject("errorMessage", "Username Already Exist!");
+			model.setViewName("insertPage");
+			return model;
+		}
+		
+		
+	}
+////// JSP CODE
+	<form action="/insertMember" method="POST">
+
+		<center>
+			<font size="3.5"
+				style="font-family: Calibri, Garamond, Serif; color: #D2691E;">Admin:
+				Create User </font> <br> <br>
+
+			<div class="" style="width: 1000px">
+
+				<div class="col-sm-12">
+				<div class="form-group">
+					<center>
+						<font size="5"
+							style="font-family: Calibri, Garamond, Serif; color: #D2691E;">${errorMessage}
+						</font>
+					</center>
+				</div>
+				<div class="form-group">
+					<input name="userName" class="form-control" id="userName"
+						placeholder="User Name" required>
+				</div>
+				<div class="form-group">
+					<input type="password" name="password" class="form-control"
+						id="password" placeholder="Password" required>
+				</div>
+				</div>
+
+				<div class="col-sm-6">
+					<div class="funkyradio">
+						<div class="funkyradio-primary">
+							<input type="radio" name="userType" value="Admin" id="radio1"
+								checked /> <label for="radio1">Admin</label>
+						</div>
+					</div>
+
+				</div>
+				<div class="col-sm-6">
+					<div class="funkyradio">
+						<div class="funkyradio-primary">
+							<input type="radio" name="userType" value="Member" id="radio2" />
+							<label for="radio2">Member</label>
+						</div>
+					</div>
+				</div>
+
+				<button type="submit" class="btn btn-success" style="width: 100px">Add</button>
+			</div>
+		</center>
+
+	</form>
